@@ -205,18 +205,6 @@ namespace MedicalApp.API.Controllers
             _notificationHub = notificationHub;
         }
 
-        // ==========================
-        // ?? Egypt Time Helper
-        // ==========================
-        private DateTime GetEgyptTime()
-        {
-            var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
-
-            return TimeZoneInfo.ConvertTimeFromUtc(
-                DateTime.Now,
-                egyptTimeZone
-            );
-        }
 
         // ==========================
         // ?? Create Post
@@ -255,7 +243,7 @@ namespace MedicalApp.API.Controllers
                 Content = content,
                 ImageUrl = imagePath,
                 UserId = userId!,
-                CreatedAt = GetEgyptTime()
+                CreatedAt = DateTime.Now
             };
 
             _context.Posts.Add(post);
@@ -344,7 +332,7 @@ namespace MedicalApp.API.Controllers
                 post.ImageUrl = "/images/" + fileName;
             }
 
-            post.UpdatedAt = GetEgyptTime();
+            post.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
 
@@ -402,7 +390,7 @@ namespace MedicalApp.API.Controllers
                 UserId = userId!,
                 ContentType = "post",
                 ItemId = postId,
-                SavedAt = GetEgyptTime()
+                SavedAt = DateTime.Now
             };
 
             _context.SavedItems.Add(savedItem);
@@ -446,7 +434,7 @@ namespace MedicalApp.API.Controllers
             {
                 UserId = userId!,
                 PostId = postId,
-                CreatedAt = GetEgyptTime()
+                CreatedAt = DateTime.Now
             };
 
             _context.Likes.Add(like);
@@ -459,7 +447,7 @@ namespace MedicalApp.API.Controllers
                     Title = "New Like",
                     Body = "Someone liked your post.",
                     Type = "Like",
-                    CreatedAt = GetEgyptTime()
+                    CreatedAt = DateTime.Now
                 };
                 _context.Notifications.Add(notification);
 
@@ -555,7 +543,7 @@ namespace MedicalApp.API.Controllers
                 PostId = postId,
                 UserId = userId!,
                 Content = dto.Text,
-                CreatedAt = GetEgyptTime()
+                CreatedAt = DateTime.Now
             };
 
             _context.Comments.Add(comment);
