@@ -361,6 +361,18 @@ namespace MedicalApp.API.Controllers
             if (post.UserId != userId)
                 return Forbid();
 
+            // Remove related Likes
+            var likes = _context.Likes.Where(l => l.PostId == id);
+            _context.Likes.RemoveRange(likes);
+
+            // Remove related Comments
+            var comments = _context.Comments.Where(c => c.PostId == id);
+            _context.Comments.RemoveRange(comments);
+
+            // Remove related SavedItems
+            var savedItems = _context.SavedItems.Where(s => s.ContentType == "post" && s.ItemId == id);
+            _context.SavedItems.RemoveRange(savedItems);
+
             _context.Posts.Remove(post);
 
             await _context.SaveChangesAsync();

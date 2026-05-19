@@ -33,6 +33,8 @@ namespace MedicalApp.API.Models
 
         public string? ImageUrl { get; set; }
 
+        public string? SessionMediaUrl { get; set; }
+
         public bool IsStarted { get; set; } = false;
 
         public string Status { get; set; } = "Pending"; // Pending, Accepted, Rejected

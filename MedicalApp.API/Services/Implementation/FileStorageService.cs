@@ -18,7 +18,10 @@ namespace MedicalApp.API.Services.Implementation
                     "application/msword",
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document" };
 
-        private const long MaxFileSizeBytes = 20 * 1024 * 1024; // 20 MB
+        private static readonly HashSet<string> AllowedVideoTypes =
+            new() { "video/mp4" };
+
+        private const long MaxFileSizeBytes = 50 * 1024 * 1024; // 50 MB
 
         public FileStorageService(IWebHostEnvironment env)
         {
@@ -45,7 +48,7 @@ namespace MedicalApp.API.Services.Implementation
                 throw new ArgumentException("File is empty.");
 
             if (file.Length > MaxFileSizeBytes)
-                throw new ArgumentException($"File size exceeds the 20 MB limit.");
+                throw new ArgumentException($"File size exceeds the 50 MB limit.");
 
             ValidateMimeType(file);
 
@@ -96,6 +99,7 @@ namespace MedicalApp.API.Services.Implementation
 
             var allowed = AllowedImageTypes
                 .Union(AllowedAudioTypes)
+                .Union(AllowedVideoTypes)
                 .Union(AllowedFileTypes);
 
             if (!allowed.Contains(contentType))

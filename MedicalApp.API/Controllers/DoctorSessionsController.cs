@@ -60,9 +60,11 @@ namespace MedicalApp.API.Controllers
             // رفع الملف لو موجود
             if (dto.MediaFile != null)
             {
-                var fileUrl = await _fileStorageService.UploadFileAsync(dto.MediaFile);
+                var fileUrl = await _fileStorageService.SaveFileAsync(dto.MediaFile, "uploads/sessions");
                 
-                // بنحط اللينك في الخانة المناسبة حسب نوع الجلسة
+                session.SessionMediaUrl = fileUrl;
+
+                // بنحط اللينك في الخانة المناسبة حسب نوع الجلسة (للتوافق القديم)
                 switch (session.SessionType)
                 {
                     case "video":
@@ -87,6 +89,11 @@ namespace MedicalApp.API.Controllers
                 session.AudioUrl = dto.AudioUrl;
                 session.PdfUrl = dto.PdfUrl;
                 session.ImageUrl = dto.ImageUrl;
+                
+                if (!string.IsNullOrEmpty(dto.VideoUrl)) session.SessionMediaUrl = dto.VideoUrl;
+                else if (!string.IsNullOrEmpty(dto.AudioUrl)) session.SessionMediaUrl = dto.AudioUrl;
+                else if (!string.IsNullOrEmpty(dto.PdfUrl)) session.SessionMediaUrl = dto.PdfUrl;
+                else if (!string.IsNullOrEmpty(dto.ImageUrl)) session.SessionMediaUrl = dto.ImageUrl;
             }
 
             _context.DoctorSessions.Add(session);
@@ -120,19 +127,22 @@ namespace MedicalApp.API.Controllers
             return Ok(sessions);
         }
 
-        // 3. الـ Podcast (بيجيب الجلسات اللي فيها ملفات صوت فقط)
+        // 3. الـ Podcast (بيجيب المحتوى العام فقط وليس الجلسات الخاصة)
         [HttpGet("podcasts")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetPodcasts()
         {
-            // بنجيب أي جلسة فيها لينك صوت عشان تظهر في البودكاست
-            var podcasts = await _context.DoctorSessions
-                .Where(s => !string.IsNullOrEmpty(s.AudioUrl))
-                .OrderByDescending(s => s.ScheduledAt)
-                .Select(s => new {
-                    s.Id,
-                    s.PatientName,
-                    s.AudioUrl,
-                    s.ScheduledAt
+            var podcasts = await _context.PodcastEpisodes
+                .Where(p => p.IsPublished)
+                .OrderByDescending(p => p.PublishDate)
+                .Select(p => new {
+                    p.Id,
+                    Title = p.Title,
+                    Description = p.Description,
+                    AudioUrl = p.AudioUrl,
+                    ImageUrl = p.CoverImageUrl,
+                    DurationSeconds = p.DurationInSeconds,
+                    PublishedAt = p.PublishDate
                 })
                 .ToListAsync();
 
