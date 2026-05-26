@@ -1,13 +1,16 @@
-﻿namespace MedicalApp.API.DTOs
+namespace MedicalApp.API.DTOs
 {
     public class PodcastListDto
     {
         public int Id { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
-        public string AudioUrl { get; set; }
-        public string CoverImageUrl { get; set; }
-        public int DurationInSeconds { get; set; }
-        public DateTime PublishDate { get; set; }
+        public string FileUrl { get; set; } = default!;
+        public string? FileName { get; set; }
+        public string? MimeType { get; set; }
+        public long FileSize { get; set; }
+        public string? CoverImageUrl { get; set; }
+        public int? Duration { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

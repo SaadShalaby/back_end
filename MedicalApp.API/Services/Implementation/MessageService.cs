@@ -36,6 +36,7 @@ namespace MedicalApp.API.Services.Implementation
         {
             // ✅ Step 1: Get (ConversationId, OtherId) directly from DB — no string parsing
             var participantPairs = await _context.Messages
+                .AsNoTracking()
                 .Where(m => m.SenderId == userId || m.ReceiverId == userId)
                 .Select(m => new
                 {
@@ -52,6 +53,7 @@ namespace MedicalApp.API.Services.Implementation
 
             // ✅ Step 2: Get conversation stats
             var rawConversations = await _context.Messages
+                .AsNoTracking()
                 .Where(m => m.SenderId == userId || m.ReceiverId == userId)
                 .GroupBy(m => m.ConversationId)
                 .Select(g => new
@@ -135,6 +137,7 @@ namespace MedicalApp.API.Services.Implementation
                 .CountAsync(m => m.ConversationId == conversationId);
 
             var messages = await _context.Messages
+                .AsNoTracking()
                 .Where(m => m.ConversationId == conversationId)
                 .OrderByDescending(m => m.SentAt)           // newest first for reverse scroll
                 .Skip((page - 1) * pageSize)
@@ -150,6 +153,7 @@ namespace MedicalApp.API.Services.Implementation
                     AttachmentName = m.AttachmentName,
                     IsPinned = m.IsPinned,
                     IsRead = m.IsRead,
+                    ReadAt = m.ReadAt,
                     SentAt = m.SentAt
                 })
                 .ToListAsync();
@@ -265,7 +269,11 @@ namespace MedicalApp.API.Services.Implementation
 
             if (!unread.Any()) return;
 
-            unread.ForEach(m => m.IsRead = true);
+            foreach (var m in unread)
+            {
+                m.IsRead = true;
+                m.ReadAt = DateTime.Now;
+            }
             await _context.SaveChangesAsync();
 
             // 1. Notify the sender immediately to show double checks
@@ -282,7 +290,7 @@ namespace MedicalApp.API.Services.Implementation
         // Unread Count
         // ─────────────────────────────────────────────
         public async Task<int> GetUnreadCountAsync(string userId)
-            => await _context.Messages.CountAsync(m => m.ReceiverId == userId && !m.IsRead);
+            => await _context.Messages.AsNoTracking().CountAsync(m => m.ReceiverId == userId && !m.IsRead);
 
         // ─────────────────────────────────────────────
         // Pin / Unpin Message
@@ -320,6 +328,7 @@ namespace MedicalApp.API.Services.Implementation
                 throw new UnauthorizedAccessException("Access denied.");
 
             return await _context.Messages
+                .AsNoTracking()
                 .Where(m => m.ConversationId == conversationId && m.IsPinned)
                 .OrderBy(m => m.SentAt)
                 .Select(m => MapToDto(m))
@@ -361,6 +370,7 @@ namespace MedicalApp.API.Services.Implementation
                 return new List<ConversationDto>();
 
             var conversations = await _context.Messages
+                .AsNoTracking()
                 .Where(m => favorites.Contains(m.ConversationId) &&
                             (m.SenderId == userId || m.ReceiverId == userId))
                 .GroupBy(m => m.ConversationId)
@@ -426,6 +436,7 @@ namespace MedicalApp.API.Services.Implementation
             AttachmentName = m.AttachmentName,
             IsPinned = m.IsPinned,
             IsRead = m.IsRead,
+            ReadAt = m.ReadAt,
             SentAt = m.SentAt
         };
     }

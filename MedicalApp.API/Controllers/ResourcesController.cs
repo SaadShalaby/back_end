@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using MedicalApp.API.Services.Interfaces;
 using ResourceType = MedicalApp.API.Models.Enums.ResourceType;
 
 namespace MedicalApp.API.Controllers
@@ -15,10 +16,12 @@ namespace MedicalApp.API.Controllers
     public class ResourcesController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IFileStorageService _fileStorageService;
 
-        public ResourcesController(AppDbContext context)
+        public ResourcesController(AppDbContext context, IFileStorageService fileStorageService)
         {
             _context = context;
+            _fileStorageService = fileStorageService;
         }
 
         // GET all
@@ -28,6 +31,7 @@ namespace MedicalApp.API.Controllers
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var resources = await _context.Resources
+                .AsNoTracking()
                 .Select(r => new ResourceDto
                 {
                     Id = r.Id,
@@ -35,11 +39,13 @@ namespace MedicalApp.API.Controllers
                     Description = r.Description,
                     CoverImageUrl = r.CoverImageUrl,
                     Type = r.Type.ToString(),
-                    Url = r.Url,
+                    FileUrl = r.FileUrl,
+                    FileName = r.FileName,
+                    MimeType = r.MimeType,
                     Duration = r.Duration,
                     FileSize = r.FileSize,
                     CreatedDate = r.CreatedDate,
-                    IsSaved = currentUserId != null && _context.SavedItems.Any(s => s.UserId == currentUserId && s.ContentType == r.Type.ToString().ToLower() && s.ItemId == r.Id)
+                    IsSaved = currentUserId != null && _context.SavedItems.Any(s => s.UserId == currentUserId && s.ContentType == "resource" && s.ItemId == r.Id)
                 })
                 .OrderByDescending(r => r.CreatedDate)
                 .ToListAsync();
@@ -54,6 +60,7 @@ namespace MedicalApp.API.Controllers
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var resources = await _context.Resources
+                .AsNoTracking()
                 .Where(r => r.Type == type)
                 .Select(r => new ResourceDto
                 {
@@ -62,11 +69,13 @@ namespace MedicalApp.API.Controllers
                     Description = r.Description,
                     CoverImageUrl = r.CoverImageUrl,
                     Type = r.Type.ToString(),
-                    Url = r.Url,
+                    FileUrl = r.FileUrl,
+                    FileName = r.FileName,
+                    MimeType = r.MimeType,
                     Duration = r.Duration,
                     FileSize = r.FileSize,
                     CreatedDate = r.CreatedDate,
-                    IsSaved = currentUserId != null && _context.SavedItems.Any(s => s.UserId == currentUserId && s.ContentType == r.Type.ToString().ToLower() && s.ItemId == r.Id)
+                    IsSaved = currentUserId != null && _context.SavedItems.Any(s => s.UserId == currentUserId && s.ContentType == "resource" && s.ItemId == r.Id)
                 })
                 .ToListAsync();
 
@@ -75,8 +84,24 @@ namespace MedicalApp.API.Controllers
 
         // POST
         [HttpPost]
-        public async Task<IActionResult> Create(Resource resource)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Create([FromForm] CreateResourceDto dto)
         {
+            string fileUrl = await _fileStorageService.SaveFileAsync(dto.File, "uploads/resources");
+
+            var resource = new Resource
+            {
+                Title = dto.Title,
+                Description = dto.Description,
+                CoverImageUrl = dto.CoverImageUrl,
+                Type = dto.Type,
+                Duration = dto.Duration,
+                FileUrl = fileUrl,
+                FileName = dto.File.FileName,
+                MimeType = dto.File.ContentType,
+                FileSize = dto.File.Length
+            };
+
             _context.Resources.Add(resource);
             await _context.SaveChangesAsync();
 
@@ -95,15 +120,13 @@ namespace MedicalApp.API.Controllers
 
             if (resource == null) return NotFound("Resource not found.");
 
-            var cType = resource.Type.ToString().ToLower();
-
-            var exists = await _context.SavedItems.AnyAsync(s => s.UserId == userId && s.ContentType == cType && s.ItemId == id);
+            var exists = await _context.SavedItems.AnyAsync(s => s.UserId == userId && s.ContentType == "resource" && s.ItemId == id);
             if (exists) return BadRequest("Resource is already saved.");
 
             var savedItem = new SavedItem
             {
                 UserId = userId!,
-                ContentType = cType,
+                ContentType = "resource",
                 ItemId = id,
                 SavedAt = DateTime.Now
             };
@@ -126,9 +149,7 @@ namespace MedicalApp.API.Controllers
 
             if (resource == null) return NotFound("Resource not found.");
 
-            var cType = resource.Type.ToString().ToLower();
-
-            var savedItem = await _context.SavedItems.FirstOrDefaultAsync(s => s.UserId == userId && s.ContentType == cType && s.ItemId == id);
+            var savedItem = await _context.SavedItems.FirstOrDefaultAsync(s => s.UserId == userId && s.ContentType == "resource" && s.ItemId == id);
             if (savedItem == null) return NotFound("Resource is not saved.");
 
             _context.SavedItems.Remove(savedItem);

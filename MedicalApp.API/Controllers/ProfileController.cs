@@ -200,7 +200,9 @@ namespace MedicalApp.API.Controllers
                             Description = r.Description,
                             CoverImageUrl = r.CoverImageUrl,
                             Type = r.Type.ToString(),
-                            Url = r.Url,
+                            FileUrl = r.FileUrl,
+                            FileName = r.FileName,
+                            MimeType = r.MimeType,
                             Duration = r.Duration,
                             FileSize = r.FileSize,
                             CreatedDate = r.CreatedDate,
@@ -222,6 +224,72 @@ namespace MedicalApp.API.Controllers
             }
 
             return Ok(responseList);
+        }
+
+        [HttpGet("my-posts")]
+        public async Task<IActionResult> GetMyPosts()
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (currentUserId == null) return Unauthorized();
+
+            var posts = await _context.Posts
+                .Where(p => p.UserId == currentUserId)
+                .Include(p => p.User)
+                .OrderByDescending(p => p.CreatedAt)
+                .Select(p => new PostResponseDto
+                {
+                    Id = p.Id,
+                    Content = p.Content,
+                    ImageUrl = p.ImageUrl,
+                    UserName = p.User.FullName,
+                    UserAvatar = p.User.AvatarUrl ?? "/images/default-user.png",
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+                    IsEdited = p.UpdatedAt.HasValue,
+                    IsOwner = true,
+                    IsSaved = _context.SavedItems.Any(s => s.UserId == currentUserId && s.ContentType == "post" && s.ItemId == p.Id),
+                    IsLiked = _context.Likes.Any(l => l.PostId == p.Id && l.UserId == currentUserId),
+                    LikesCount = _context.Likes.Count(l => l.PostId == p.Id),
+                    CommentsCount = _context.Comments.Count(c => c.PostId == p.Id)
+                })
+                .ToListAsync();
+
+            return Ok(posts);
+        }
+
+        [HttpGet("my-sessions")]
+        public async Task<IActionResult> GetMySessions()
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (currentUserId == null) return Unauthorized();
+
+            var sessions = await _context.DoctorSessions
+                .AsNoTracking()
+                .Where(s => s.PatientId == currentUserId)
+                .OrderByDescending(s => s.ScheduledAt)
+                .Select(s => new SessionResponseDto
+                {
+                    Id = s.Id,
+                    DoctorId = s.DoctorId,
+                    DoctorName = _context.Doctors.Where(d => d.UserId == s.DoctorId).Select(d => d.Name).FirstOrDefault()
+                                 ?? _context.Users.Where(u => u.Id == s.DoctorId).Select(u => u.FullName).FirstOrDefault()
+                                 ?? "Unknown Doctor",
+                    DoctorAvatar = _context.Users.Where(u => u.Id == s.DoctorId).Select(u => u.AvatarUrl).FirstOrDefault()
+                                   ?? "/images/default-user.png",
+                    Title = "Session with Dr. " + (_context.Doctors.Where(d => d.UserId == s.DoctorId).Select(d => d.Name).FirstOrDefault()
+                            ?? _context.Users.Where(u => u.Id == s.DoctorId).Select(u => u.FullName).FirstOrDefault()
+                            ?? "Unknown Doctor"),
+                    Description = $"Scheduled private doctor session ({s.SessionType})",
+                    SessionMediaUrl = s.SessionMediaUrl,
+                    ScheduledAt = s.ScheduledAt,
+                    CreatedAt = s.ScheduledAt,
+                    Status = s.Status,
+                    MediaType = s.SessionType,
+                    Duration = null
+                })
+                .ToListAsync();
+
+            return Ok(sessions);
         }
     }
 }

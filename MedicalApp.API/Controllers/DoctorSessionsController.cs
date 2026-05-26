@@ -134,15 +134,15 @@ namespace MedicalApp.API.Controllers
         {
             var podcasts = await _context.PodcastEpisodes
                 .Where(p => p.IsPublished)
-                .OrderByDescending(p => p.PublishDate)
+                .OrderByDescending(p => p.CreatedAt)
                 .Select(p => new {
                     p.Id,
                     Title = p.Title,
                     Description = p.Description,
-                    AudioUrl = p.AudioUrl,
+                    AudioUrl = p.FileUrl,
                     ImageUrl = p.CoverImageUrl,
-                    DurationSeconds = p.DurationInSeconds,
-                    PublishedAt = p.PublishDate
+                    DurationSeconds = p.Duration,
+                    PublishedAt = p.CreatedAt
                 })
                 .ToListAsync();
 

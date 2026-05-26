@@ -11,7 +11,7 @@ namespace MedicalApp.API.Services.Implementation
             new() { "image/jpeg", "image/png", "image/gif", "image/webp" };
 
         private static readonly HashSet<string> AllowedAudioTypes =
-            new() { "audio/mpeg", "audio/wav", "audio/ogg", "audio/webm", "audio/mp4" };
+            new() { "audio/mpeg", "audio/wav", "audio/ogg", "audio/webm", "audio/mp4", "audio/mp3", "audio/x-wav", "audio/aac", "audio/m4a" };
 
         private static readonly HashSet<string> AllowedFileTypes =
             new() { "application/pdf", "text/plain",

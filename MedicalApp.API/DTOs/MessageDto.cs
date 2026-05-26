@@ -14,6 +14,7 @@ namespace MedicalApp.API.DTOs
         public string? AttachmentName { get; set; }
         public bool IsPinned { get; set; }
         public bool IsRead { get; set; }
+        public DateTime? ReadAt { get; set; }
         public DateTime SentAt { get; set; }
     }
 

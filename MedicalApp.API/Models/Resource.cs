@@ -18,11 +18,15 @@ namespace MedicalApp.API.Models
         [Required]
         public ResourceType Type { get; set; }
 
-        public string? Url { get; set; }
+        public string? FileUrl { get; set; }
+
+        public string? FileName { get; set; }
+
+        public string? MimeType { get; set; }
 
         public int? Duration { get; set; } // seconds (for video)
 
-        public double? FileSize { get; set; } // MB (for pdf)
+        public long FileSize { get; set; } // Bytes
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;
     }

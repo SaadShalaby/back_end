@@ -84,6 +84,9 @@ namespace MedicalApp.API.Controllers
 
             var roles = await _userManager.GetRolesAsync(user);
 
+            if (roles.Contains("Admin"))
+                return Unauthorized("Admins must use the dashboard login.");
+
             // التوكن بيتم إنشاؤه بناءً على الـ Role
             var token = _jwtService.CreateToken(user, roles.First());
 
@@ -91,6 +94,29 @@ namespace MedicalApp.API.Controllers
             {
                 token,
                 role = roles.First(),
+                profileImage = user.AvatarUrl,
+                rememberMe = dto.RememberMe
+            });
+        }
+
+        [HttpPost("admin-login")]
+        public async Task<IActionResult> AdminLogin([FromBody] LoginDto dto)
+        {
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+                return Unauthorized("Invalid Email or Password");
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            if (!roles.Contains("Admin"))
+                return Unauthorized("Access restricted to Admins only.");
+
+            var token = _jwtService.CreateToken(user, "Admin");
+
+            return Ok(new
+            {
+                token,
+                role = "Admin",
                 profileImage = user.AvatarUrl,
                 rememberMe = dto.RememberMe
             });

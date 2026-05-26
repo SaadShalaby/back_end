@@ -32,6 +32,8 @@ namespace MedicalApp.API.Models
 
         public bool IsRead { get; set; } = false;
 
+        public DateTime? ReadAt { get; set; }
+
         public DateTime SentAt { get; set; } = DateTime.Now;
         // Note: No navigation properties to avoid FK conflicts with existing data
     }

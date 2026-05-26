@@ -7,12 +7,16 @@ namespace MedicalApp.API.Models
         public string Title { get; set; }
         public string Description { get; set; }
 
-        public string AudioUrl { get; set; }   // Streaming URL
-        public string CoverImageUrl { get; set; }
+        public string FileUrl { get; set; } = default!;
+        public string? FileName { get; set; }
+        public string? MimeType { get; set; }
+        public long FileSize { get; set; }
 
-        public int DurationInSeconds { get; set; }
+        public string? CoverImageUrl { get; set; }
 
-        public DateTime PublishDate { get; set; } = DateTime.Now;
+        public int? Duration { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public bool IsPublished { get; set; } = true;
     }
